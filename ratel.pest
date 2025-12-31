@@ -1,0 +1,22 @@
+// WHITESPACE avec un underscore (_) signifie "silencieux" (ignoré par le parser)
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+
+string     = @{ "\"" ~ (!"\"" ~ ANY)* ~ "\"" }
+identifier = @{ (ASCII_ALPHANUMERIC | "_")+ }
+
+file = { SOI ~ scenario ~ target ~ with_scope ~ (before_each)? ~ (step)* ~ EOI }
+
+scenario    = { "SCENARIO" ~ string }
+target      = { "TARGET" ~ string }
+with_scope  = { "WITH_SCOPE" ~ identifier }
+before_each = { "BEFORE_EACH" ~ (instruction)* }
+
+// On s'assure que step et ses instructions internes acceptent le WHITESPACE
+step        = { "STEP" ~ string ~ (instruction)* }
+
+instruction = _{ attack | check | expect }
+attack      = { "ATTACK" ~ identifier }
+expect      = { "EXPECT" ~ identifier }
+check       = { "CHECK" ~ (header_check | status_check) }
+header_check = { "header" ~ string ~ "EXISTS" }
+status_check = { "response.status BE" ~ ASCII_DIGIT+ }
