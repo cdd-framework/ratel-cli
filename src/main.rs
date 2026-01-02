@@ -79,7 +79,13 @@ fn main() {
 
             let (p_type, path, content) = if Path::new("package.json").exists() {
                 ("Node.js", "tests/ratel/security.ratel".to_string(), generate_default_scenario())
+            } else if Path::new("pom.xml").exists() || Path::new("build.gradle").exists() || Path::new("build.gradle.kts").exists() {
+                // Java / Kotlin (Standard Maven/Gradle layout)
+                ("Java/JVM", "src/test/resources/ratel/security.ratel".to_string(), generate_default_scenario())
+            } else if Path::new("setup.py").exists() || Path::new("requirements.txt").exists() {
+                ("Python", "tests/ratel/security.ratel".to_string(), generate_default_scenario())
             } else {
+                // Défaut (Racine)
                 ("Generic", "security.ratel".to_string(), generate_default_scenario())
             };
 
