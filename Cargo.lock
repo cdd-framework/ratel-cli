@@ -118,7 +118,8 @@ dependencies = [
 
 [[package]]
 name = "cdd_core"
-version = "0.4.0"
+version = "0.4.2"
+source = "git+https://github.com/cdd-framework/cdd-core#98630beb81af5bcf5661dbb4c94f74d89b57f23f"
 dependencies = [
  "reqwest",
  "serde",

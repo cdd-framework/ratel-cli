@@ -65,6 +65,7 @@ enum Commands {
     },
     Check,
     Certify,
+    ShowVersion,
     // Executes the full audit (Parsing -> cdd-core -> JSON Report)
     Run { path: String },
 }
@@ -88,7 +89,8 @@ fn main() {
         },
         Commands::Check => { check_integrity(); },
         Commands::Certify => { certify_modifications(); },
-        Commands::Run { path } => { execute_full_audit(path); },
+        Commands::Run { path } => { execute_full_audit(path); }
+        Commands::ShowVersion => { show_version_info(); }
     }
 }
 
@@ -239,4 +241,10 @@ fn certify_modifications() {
     config.customized_at = Some(Utc::now());
     fs::write("ratel.yaml", serde_yaml::to_string(&config).unwrap()).unwrap();
     println!("New baseline established.");
+}
+
+fn show_version_info() {
+    println!("Ratel CLI version: {}", env!("CARGO_PKG_VERSION"));
+    let engine_v = cdd_core::get_version();
+    println!("cdd-core version: {}", engine_v);
 }
