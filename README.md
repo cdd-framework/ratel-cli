@@ -13,6 +13,9 @@ cargo install ratel-cli
 
 # Verify installation
 ratel --version
+
+# Installation using install.sh
+curl -fsSL https://raw.githubusercontent.com/cdd-framework/ratel-cli/main/install.sh | sh
 ```
 
 ## Fundamental Commands
