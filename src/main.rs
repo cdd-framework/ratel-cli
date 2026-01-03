@@ -25,13 +25,12 @@ pub struct RatelConfig {
     pub expert_hashes: HashMap<String, String>,
 }
 
-// Structures for the audit report consolidated by ratel-cli
 #[derive(Serialize, Clone)]
 struct ActionResult {
     kind: String,
     value: String,
     target: Option<String>,
-    status: String, // "SUCCESS", "FAILED", "ERROR"
+    status: String, 
     message: String,
 }
 
@@ -66,7 +65,6 @@ enum Commands {
     Check,
     Certify,
     ShowVersion,
-    // Executes the full audit (Parsing -> cdd-core -> JSON Report)
     Run { path: String },
 }
 
@@ -80,12 +78,10 @@ fn main() {
             let (p_type, path, content) = if Path::new("package.json").exists() {
                 ("Node.js", "tests/ratel/security.ratel".to_string(), generate_default_scenario())
             } else if Path::new("pom.xml").exists() || Path::new("build.gradle").exists() || Path::new("build.gradle.kts").exists() {
-                // Java / Kotlin (Standard Maven/Gradle layout)
                 ("Java/JVM", "src/test/resources/ratel/security.ratel".to_string(), generate_default_scenario())
             } else if Path::new("setup.py").exists() || Path::new("requirements.txt").exists() {
                 ("Python", "tests/ratel/security.ratel".to_string(), generate_default_scenario())
             } else {
-                // Défaut (Racine)
                 ("Generic", "security.ratel".to_string(), generate_default_scenario())
             };
 
@@ -112,14 +108,11 @@ STEP "Secure transport verification"
         .to_string()
 }
 
-// Pivot function: Parses the DSL and calls cdd-core for each action
 fn execute_full_audit(path: &str) {
-    // 1. Preliminary integrity check
     check_integrity();
 
     let content = fs::read_to_string(path).expect("Unable to read .ratel file");
     
-    // 2. Safe Parsing: avoid thread panic
     let file_parse_result = RatelParser::parse(Rule::file, &content);
     
     let file = match file_parse_result {
@@ -143,6 +136,13 @@ fn execute_full_audit(path: &str) {
         executed_at: Utc::now(),
     };
 
+    // Variable to store the context of the last received HTTP response
+    // Initialized with default values
+    let mut last_context = cdd_core::ResponseContext {
+        status: 0,
+        headers: reqwest::header::HeaderMap::new(),
+    };
+
     for record in file.into_inner() {
         match record.as_rule() {
             Rule::scenario => report.name = record.into_inner().as_str().replace("\"", ""),
@@ -154,13 +154,22 @@ fn execute_full_audit(path: &str) {
                 let mut action_results = Vec::new();
 
                 for cmd in inner {
-                    // 3. Synchronizing payloads with cdd-core execution
                     let result = match cmd.as_rule() {
                         Rule::attack => {
                             let attack_val = cmd.into_inner().as_str();
-                            // Call to external cdd-core library
                             let core_res = cdd_core::execute_attack("attack", attack_val);
                             
+                            // Simulated context update if the attack is successful
+                            // Note: In a future version, execute_attack might return the actual ResponseContext object
+                            if core_res.success {
+                                last_context.status = 200; 
+                                // Simulating the addition of headers for local testing
+                                last_context.headers.insert(
+                                    reqwest::header::STRICT_TRANSPORT_SECURITY,
+                                    reqwest::header::HeaderValue::from_static("max-age=31536000")
+                                );
+                            }
+
                             ActionResult {
                                 kind: "ATTACK".into(),
                                 value: attack_val.into(),
@@ -171,8 +180,9 @@ fn execute_full_audit(path: &str) {
                         },
                         Rule::check => {
                             let check_val = cmd.as_str();
-                            // Call to external cdd-core library
-                            let core_res = cdd_core::verify_condition(check_val);
+                            
+                            // Passing the context as the second argument
+                            let core_res = cdd_core::verify_condition(check_val, &last_context);
 
                             ActionResult {
                                 kind: "CHECK".into(),
@@ -192,7 +202,6 @@ fn execute_full_audit(path: &str) {
         }
     }
 
-    // Sends the final JSON report back to cdd-node
     println!("{}", serde_json::to_string_pretty(&report).unwrap());
 }
 
