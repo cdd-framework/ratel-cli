@@ -1,4 +1,4 @@
-# 🐾 Ratel CLI (v0.5.3)
+# 🐾 Ratel CLI (v0.5.4)
 The Cyberattack-Driven Development (CDD) Orchestrator. Because security isn't a feature, it's a foundation.
 
 Ratel is the official command-line tool (CLI) for the CDD methodology. It allows developers to inject, verify, and certify expert-level security tests directly into their projects (Java, Node.js, Python), requiring zero prior cybersecurity knowledge.
